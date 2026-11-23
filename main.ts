@@ -21,7 +21,7 @@
 //
 // The program is deterministic: the same text on every run.
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const SENTENCES: string[] = [
   "At three in the morning the lighthouse keeper found a second light burning in a room with no door.",
@@ -43,11 +43,23 @@ function guardLength(text: string): void {
   }
 }
 
+// The sandbox hands the text to a sealed gate and then to the judge, so
+// a silent short write would fail the entry without a trace. Write the
+// file, read it back, and refuse to finish unless the bytes on disk are
+// exactly the text we meant to send.
+function writeEntry(text: string): void {
+  mkdirSync("/output", { recursive: true });
+  writeFileSync("/output/entry.txt", text, "utf8");
+  const roundTripped = readFileSync("/output/entry.txt", "utf8");
+  if (roundTripped !== text) {
+    throw new Error("entry.txt did not round-trip");
+  }
+}
+
 function main(): void {
   const entry = buildEntry();
   guardLength(entry);
-  mkdirSync("/output", { recursive: true });
-  writeFileSync("/output/entry.txt", entry, "utf8");
+  writeEntry(entry);
 }
 
 main();
